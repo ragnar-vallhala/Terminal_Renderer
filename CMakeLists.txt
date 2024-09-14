@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
-project(Terminal_Renderer LANGUAGES CXX CUDA)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_STANDARD 11)
+if (USE_CUDA)
+  project(Terminal_Renderer LANGUAGES CXX CUDA)
+  set(CMAKE_CUDA_STANDARD 11)
+endif()
+if (NOT USE_CUDA) 
+  project(Terminal_Renderer LANGUAGES CXX)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
 option(USE_CPU "Build with CPU compute support" ON)
 option(USE_GPU "Build with GPU compute support" OFF)
