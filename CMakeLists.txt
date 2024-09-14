@@ -4,29 +4,104 @@ project(Terminal_Renderer LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 11)
 
-# Find all C++ and CUDA source files in src/
+option(USE_CPU "Build with CPU compute support" ON)
+option(USE_GPU "Build with GPU compute support" OFF)
+option(USE_CUDA "Build with CUDA compute support" OFF)
+#-------------------------------------------------------#
+# Collect source files
 file(GLOB LIBRARY_SOURCES
     ${CMAKE_SOURCE_DIR}/src/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/*.cu
 )
 
-# Include directories
-include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-)
+if (USE_CPU)
+    file(GLOB CPU_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/cpucompute/*.cpp
+    )
+    list(APPEND LIBRARY_SOURCES ${CPU_SOURCES})
+endif()
 
+if (USE_GPU)
+    file(GLOB GPU_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/gpucompute/*.cpp
+    )
+    list(APPEND LIBRARY_SOURCES ${GPU_SOURCES})
+endif()
+
+if (USE_CUDA)
+    file(GLOB CUDA_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/cudacompute/*.cpp
+    )
+    list(APPEND LIBRARY_SOURCES ${CUDA_SOURCES})
+endif()
 # Check if any source files are found
 if (NOT LIBRARY_SOURCES)
     message(FATAL_ERROR "No source files found in src/")
 endif()
 
-# Add the shared library
-add_library(Terminal_Renderer SHARED ${LIBRARY_SOURCES})
+#-------------------------------------------------------#
+# Define include directories
+set(INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/dependencies/stbi
+)
 
-# Glob all test files in the tests/ directory
+if (USE_CPU)
+    list(APPEND INCLUDE_DIRS
+        ${CMAKE_SOURCE_DIR}/include/cpucompute
+    )
+endif()
+
+if (USE_GPU)
+    list(APPEND INCLUDE_DIRS
+        ${CMAKE_SOURCE_DIR}/include/gpucompute
+    )
+endif()
+
+if (USE_CUDA)
+    list(APPEND INCLUDE_DIRS
+        ${CMAKE_SOURCE_DIR}/include/cudacompute
+    )
+endif()
+
+include_directories(${INCLUDE_DIRS})
+
+#-------------------------------------------------------#
+# Collect test files
 file(GLOB TEST_FILES
     ${CMAKE_SOURCE_DIR}/tests/*.cpp
 )
+
+if (USE_CPU)
+    file(GLOB CPU_TEST_FILES
+        ${CMAKE_SOURCE_DIR}/tests/cputests/*.cpp
+    )
+    list(APPEND TEST_FILES ${CPU_TEST_FILES})
+endif()
+
+if (USE_GPU)
+    file(GLOB GPU_TEST_FILES
+        ${CMAKE_SOURCE_DIR}/tests/gputests/*.cpp
+    )
+    list(APPEND TEST_FILES ${GPU_TEST_FILES})
+endif()
+
+if (USE_CUDA)
+    file(GLOB CUDA_TEST_FILES
+        ${CMAKE_SOURCE_DIR}/tests/cudatests/*.cpp
+    )
+    list(APPEND TEST_FILES ${CUDA_TEST_FILES})
+endif()
+
+
+#-------------------------------------------------------#
+
+
+
+# Add the shared library
+add_library(Terminal_Renderer SHARED ${LIBRARY_SOURCES})
+
+
+#-------------------------------------------------------#
 
 # Loop over each test file and create a corresponding executable and test
 foreach(TEST_FILE ${TEST_FILES})
@@ -51,8 +126,18 @@ endforeach()
 # Enable testing
 enable_testing()
 
+#-------------------------------------------------------#
+# Add CUDA support if USE_CUDA is ON
+if (USE_CUDA)
+    enable_language(CUDA)
+    set_target_properties(MyLibrary PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON
+    )
 # Set CUDA flags (optional)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo")
+endif()
+
+
 
 # Set custom output directories for the library and binaries
 set_target_properties(Terminal_Renderer PROPERTIES
